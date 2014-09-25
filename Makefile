@@ -1,5 +1,6 @@
+CFLAGS=-Wall
 mping: mping.o
-	${CC} -o $@ -lcurses
+	${CC} -o $@ mping.o -lcurses
 
 
 

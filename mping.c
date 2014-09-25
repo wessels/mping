@@ -114,6 +114,8 @@ do_stats(void)
     int ttl_min;
     int ttl_max;
     int ttl;
+    int width;
+    int height;
 
     move(0, 0);
 
@@ -161,7 +163,8 @@ do_stats(void)
 	/* ttl_min, S->ttl, ttl_max, */
 	    pct_loss);
 	printw("%-57.57s", buf);
-	xtracols = w->_maxx - 58;
+	getmaxyx(w, height, width);
+	xtracols = width - 58;
 	assert(xtracols < HIST_SIZE);
 	for (j = (HIST_SIZE - xtracols); j < HIST_SIZE; j++) {
 	    rtt = S->rtt_hist[j];
@@ -175,7 +178,7 @@ do_stats(void)
 	addch('\n');
     }
 
-    move(w->_maxy - 1, 0);
+    move(height - 1, 0);
     addstr(ctime(&now));
     refresh();
 }
@@ -374,7 +377,7 @@ int
 recv_ping(void)
 {
     static int n;
-    static int fromlen;
+    static socklen_t fromlen;
     static struct sockaddr_in from;
 
     int iphdrlen;
