@@ -28,6 +28,7 @@ char *strrchr();
 #endif
 #include <assert.h>
 #include <time.h>
+#include <err.h>
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -274,6 +275,7 @@ main(int argc, char *argv[])
 {
     char myhostname[256];
     struct hostent *h;
+    in_addr_t as_inet_addr;
     int n;
     extern char *optarg;
     extern int optind;
@@ -314,12 +316,15 @@ main(int argc, char *argv[])
 	strcpy(Sites[NSites].to_host, argv[0]);
 
 	Sites[NSites].to_addr.sin_family = AF_INET;
-	if ((h = gethostbyname(Sites[NSites].to_host))) {
+	as_inet_addr = inet_addr(Sites[NSites].to_host);
+	if (as_inet_addr != INADDR_NONE) {
+	    Sites[NSites].to_addr.sin_addr.s_addr = inet_addr(Sites[NSites].to_host);
+	} else if ((h = gethostbyname(Sites[NSites].to_host))) {
 	    memcpy(&(Sites[NSites].to_addr.sin_addr.s_addr),
 		*(h->h_addr_list),
 		4);
 	} else {
-	    Sites[NSites].to_addr.sin_addr.s_addr = inet_addr(Sites[NSites].to_host);
+	    errx(1, "%s: unknown host", Sites[NSites].to_host);
 	}
 	gettimeofday(&(Sites[NSites].last_sent), 0);
 	Sites[NSites].last_sent.tv_sec -= (delay / 1000);
