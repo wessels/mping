@@ -475,7 +475,6 @@ recv_ping(void)
 time_t
 send_ping(site_t * S)
 {
-    register int i;
     register struct icmp *icp;
     struct timeval *tv;
     int offset, j, k;
@@ -493,7 +492,7 @@ send_ping(site_t * S)
     S->last_sent = *tv;
     icp->icmp_cksum = in_cksum((unsigned short *)icp, icmp_pktsize);
 
-    i = sendto(icmp_sock, send_pkt, icmp_pktsize, 0,
+    sendto(icmp_sock, send_pkt, icmp_pktsize, 0,
 	(struct sockaddr *)&(S->to_addr), sizeof(struct sockaddr_in));
 
     offset = (S->npkts_sent - 1) - S->high_seq;
