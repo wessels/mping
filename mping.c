@@ -43,7 +43,6 @@ char *strrchr();
 
 #define MAX_PKT_SZ	4096
 #define DEF_PKT_SZ	64
-#define HIST_SIZE	200
 
 #define SIZE_ICMP_HDR	8
 #define SIZE_TIME_DATA	8
@@ -67,12 +66,13 @@ static int delay;		/* milliseconds */
 static struct protoent *proto;
 static char *progname;
 static struct timeval now_tv;
+static int HIST_SIZE = 0;
 
 typedef struct _site {
     char to_host[256];
     struct sockaddr_in to_addr;
-    int rtt_hist[HIST_SIZE];
-    int ttl_hist[HIST_SIZE];
+    int *rtt_hist;
+    int *ttl_hist;
     int high_seq;
     int npkts_sent;
     int nrecv;			/* total # pings sent */
@@ -166,8 +166,7 @@ do_stats(void)
 	printw("%-57.57s", buf);
 	getmaxyx(w, height, width);
 	xtracols = width - 58;
-	assert(xtracols < HIST_SIZE);
-	for (j = (HIST_SIZE - xtracols); j < HIST_SIZE; j++) {
+	for (j = (HIST_SIZE - xtracols < 0) ? 0 : (HIST_SIZE - xtracols); j < HIST_SIZE; j++) {
 	    rtt = S->rtt_hist[j];
 	    if (rtt < 0)
 		addch(' ');
@@ -288,7 +287,7 @@ main(int argc, char *argv[])
 
     /* process options */
 
-    while ((c = getopt(argc, argv, "s:d:")) != -1) {
+    while ((c = getopt(argc, argv, "s:d:h:")) != -1) {
 	switch (c) {
 	case 's':
 	    strncpy(myhostname, optarg, 63);
@@ -296,21 +295,30 @@ main(int argc, char *argv[])
 	case 'd':
 	    delay = atoi(optarg);
 	    break;
+	case 'h':
+	    HIST_SIZE = atoi(optarg);
+	    break;
 	}
     }
     argc -= optind;
     argv += optind;
 
     if (argc < 1) {
-	fprintf(stderr, "usage: %s [-s source hostname] [-d delay] hosts...\n",
+	fprintf(stderr, "usage: %s [-s source hostname] [-d delay] [-h histsize] hosts...\n",
 	    progname);
 	exit(1);
     }
     NSites = 0;
+    if (HIST_SIZE < 1 || HIST_SIZE > 1000)
+	HIST_SIZE = 200;
     while (argc) {
 	if (NSites == 100)
 	    break;
 	memset(&Sites[NSites], '\0', sizeof(site_t));
+	Sites[NSites].rtt_hist = calloc(HIST_SIZE, sizeof(*Sites[NSites].rtt_hist));
+	Sites[NSites].ttl_hist = calloc(HIST_SIZE, sizeof(*Sites[NSites].ttl_hist));
+	assert(Sites[NSites].rtt_hist != 0);
+	assert(Sites[NSites].ttl_hist != 0);
 	for (n = 0; n < HIST_SIZE; n++)
 	    Sites[NSites].rtt_hist[n] = -1;
 	strcpy(Sites[NSites].to_host, argv[0]);
